@@ -6,142 +6,129 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import nodemailer from "nodemailer";
+import bodyParser from "body-parser";
 import multer from "multer";
-import QRCode from "qrcode";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-
-// Load environment variables before using them
-dotenv.config();
-
-// __dirname replacement for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Import Custom Modules
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
+import QRCode from "qrcode";
 
-// Log environment variables
-console.log("Environment variables:");
-console.log("EMAIL:", process.env.EMAIL);
-console.log("EMAIL_PASSWORD:", process.env.EMAIL_PASSWORD);
-console.log("PORT:", process.env.PORT);
-console.log("BASE_URL:", process.env.BASE_URL);
-console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
+// __dirname replacement
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Initialize Express App
 const app = express();
+dotenv.config();
 mongoose.set("strictQuery", true);
 
 // Connect to Database
 connectDB();
 
-// Define allowed origins
+// Middleware
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://13.200.229.88:3000",
-  "http://13.200.229.88:9000"
+  'http://13.232.78.236:3000',
+  'http://127.0.0.1:3000',
+  'http://13.232.78.236:3000',  // AWS IP
+  'http://13.232.78.236:9000'   // AWS IP with backend port
 ];
 
-// CORS middleware with dynamic origin handling
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("Origin not allowed:", origin);
-        callback(new Error("Not allowed by CORS"), false);
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-  })
-);
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.log('Blocked Origin:', origin);
+    return callback(new Error('CORS Policy Violation: Origin Not Allowed'), false);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400
+}));
 
-// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files for React build
-app.use(express.static(path.resolve("../build")));
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve("../build", "index.html"));
+// Ensure Required Directories Exist
+const imagePath = path.join(__dirname, "Public/Allimages");
+const uploadPath = path.join(__dirname, "uploads");
+
+[imagePath, uploadPath].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 });
 
-// Ensure Public/Allimages Directory Exists
-const folderPath = path.resolve("Public/Allimages");
-if (!fs.existsSync(folderPath)) {
-  fs.mkdirSync(folderPath, { recursive: true });
-}
-
 // Serve Static Files
-app.use("/public", express.static(folderPath));
-app.use("/videos", express.static(path.resolve("Videos")));
+app.use("/public", express.static(imagePath));
+app.use("/uploads", express.static(uploadPath));
+app.use("/videos", express.static(path.join(__dirname, "Videos")));
 
 // Routes
 app.get("/", (req, res) => res.send("Backend is Running.."));
 app.use("/api/auth", authRoutes);
-app.use("/api/courses", courseRoutes); // Fixed incorrect route
+app.use("/api/courses", courseRoutes);  // Fixed route path
 
-// Global Error Handling Middleware
-app.use((err, req, res, next) => {
-  if (err.message.includes("CORS")) {
-    return res.status(403).json({ status: "error", message: "CORS Error: Origin not allowed" });
-  }
-  console.error(err.stack);
-  res.status(500).json({ status: "error", message: "Internal server error" });
-});
-
-// Multer Storage Configuration
+// File Upload Configuration
 const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
+  destination: function (req, file, cb) {
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}${path.extname(file.originalname)}`);
+  },
 });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// File Upload Route
-app.post("/api/courses/upload", upload.single("video"), (req, res) => {
-  try {
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+}).single("video");
+
+// Course Upload Route
+app.post("/api/courses/upload", (req, res) => {
+  upload(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ message: "File upload error", error: err.message });
+    } else if (err) {
+      return res.status(500).json({ message: "Server error", error: err.message });
+    }
     res.status(201).json({ message: "Course created successfully" });
-  } catch (error) {
-    console.error("Server error:", error);
-    res.status(500).json({ message: "Error creating course", error: error.message });
-  }
+  });
 });
 
-// OTP Storage (Temporary)
+// OTP Storage
 const otpStore = {};
 
-// Send OTP via Email
+// Send OTP
 app.post("/send-otp", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: "Email is required" });
 
   const otp = Math.floor(100000 + Math.random() * 900000);
-  const timestamp = Date.now();
-  otpStore[email] = { otp, timestamp };
+  otpStore[email] = { otp, timestamp: Date.now() };
 
   const transporter = nodemailer.createTransport({
     service: "Gmail",
-    auth: { user: process.env.EMAIL, pass: process.env.EMAIL_PASSWORD }
+    auth: { user: process.env.EMAIL, pass: process.env.EMAIL_PASSWORD },
   });
 
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to: email,
+    subject: "Your OTP Code",
+    text: `Your OTP code is ${otp}`,
+  };
+
   try {
-    await transporter.sendMail({
-      from: process.env.EMAIL,
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP code is ${otp}`
-    });
-    res.status(200).json({ message: "OTP sent successfully to " + email });
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: `OTP sent successfully to ${email}` });
   } catch (error) {
     console.error("Error sending email:", error);
     res.status(500).json({ message: "Failed to send OTP. Please try again." });
@@ -156,7 +143,7 @@ app.post("/verify-otp", (req, res) => {
   const otpData = otpStore[email];
   if (!otpData) return res.status(400).json({ message: "No OTP sent to this email" });
 
-  const expiryTime = 30 * 1000;
+  const expiryTime = 30 * 1000; // 30 seconds
   if (Date.now() - otpData.timestamp > expiryTime) {
     delete otpStore[email];
     return res.status(400).json({ message: "OTP has expired" });
@@ -184,15 +171,17 @@ app.post("/generate-qr", async (req, res) => {
   }
 });
 
-// Verify Payment (Mock)
+// Simulated Payment Verification
 app.post("/verify-payment", (req, res) => {
   res.status(200).json({ message: "Payment Successful" });
 });
 
-// Save User Data (Placeholder)
+// Save User Data
 app.post("/api/users/save", async (req, res) => {
   try {
     const { name, email, photo } = req.body;
+    // Save user logic here
+
     res.status(200).json({ message: "User saved successfully" });
   } catch (err) {
     console.error("Error:", err);
@@ -200,9 +189,15 @@ app.post("/api/users/save", async (req, res) => {
   }
 });
 
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ status: "error", message: "Internal server error" });
+});
+
 // Start Server
 const PORT = process.env.PORT || 9000;
 app.listen(PORT, () => {
-  console.log(`API is running on ${process.env.BASE_URL}`);
-  console.log("Allowed Origins:", allowedOrigins);
+  console.log(`API is running on http://13.232.78.236:${PORT}`);
+  console.log('Allowed Origins:', allowedOrigins);
 });

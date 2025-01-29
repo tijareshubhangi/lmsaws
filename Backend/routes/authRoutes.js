@@ -88,7 +88,7 @@ router.get("/user/:userId", async (req, res) => {
 
     // Assuming you have a field in your User model for profileImage
     const latestImageUrl = user.profileImage
-      ? `http://13.200.229.88:9000/public/${user.profileImage}`
+      ? `http://13.232.78.236:9000/public/${user.profileImage}`
       : null;
 
     return res.json({
@@ -131,21 +131,7 @@ router.get("/getName/:userId/:role", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-// Test email endpoint
-app.get('/test-email', async (req, res) => {
-  try {
-    await sendEmailtoUser(
-      'http://test-link.com',
-      'test@example.com',
-      'Test User',
-      'testpassword'
-    );
-    res.send('Test email sent successfully');
-  } catch (error) {
-    console.error('Error sending test email:', error);
-    res.status(500).send('Error sending test email: ' + error.message);
-  }
-});
+
  // Update user's name
 router.put("/updateName/:userId", async (req, res) => {
   const { userId } = req.params;
