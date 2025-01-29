@@ -48,6 +48,7 @@ class authController {
       return res.status(400).json({ message: error.message });
     }
   };
+
   
   static userLogin = async (req, res) => {
     const { email, password } = req.body;
@@ -125,7 +126,7 @@ class authController {
             expiresIn: "5m",
           });
   
-          const link = `http://15.207.19.75:3000/user/reset/${isUser._id}/${token}`;
+          const link = `http://13.200.229.88:3000/user/reset/${isUser._id}/${token}`;
   
           // email sending
           const transport = nodemailer.createTransport({
@@ -246,45 +247,44 @@ class authController {
     }
   };
 
-static saveVerifiedEmail = async (req, res) => {
-  const { token } = req.params;
-  try {
-    if (!token) {
-      console.log('No token provided');
+  static saveVerifiedEmail = async (req, res) => {
+    const { token } = req.params;
+    try {
+      if (!token) {
+        console.log('No token provided');
+        return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
+      }
+  
+      const isEmailVerified = jwt.verify(token, process.env.JWT_SECRET); // Fix: Remove quotes
+      if (!isEmailVerified) {
+        console.log('Invalid token');
+        return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
+      }
+  
+      const getUser = await authModel.findOne({ email: isEmailVerified.email });
+      if (!getUser) {
+        console.log('User not found');
+        return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
+      }
+  
+      const saveEmail = await authModel.findByIdAndUpdate(
+        getUser._id,
+        { $set: { isVerified: true } },
+        { new: true }
+      );
+  
+      if (saveEmail) {
+        console.log('Email verification successful');
+        return res.redirect(`${process.env.FRONTEND_URL}/VerificationSuccess`);
+      }
+  
+      console.log('Failed to update user');
+      return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
+    } catch (error) {
+      console.error('Error in saveVerifiedEmail:', error);
       return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
     }
-
-    const isEmailVerified = jwt.verify(token, process.env.JWT_SECRET); // Fix: Remove quotes
-    if (!isEmailVerified) {
-      console.log('Invalid token');
-      return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
-    }
-
-    const getUser = await authModel.findOne({ email: isEmailVerified.email });
-    if (!getUser) {
-      console.log('User not found');
-      return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
-    }
-
-    const saveEmail = await authModel.findByIdAndUpdate(
-      getUser._id,
-      { $set: { isVerified: true } },
-      { new: true }
-    );
-
-    if (saveEmail) {
-      console.log('Email verification successful');
-      return res.redirect(`${process.env.FRONTEND_URL}/VerificationSuccess`);
-    }
-
-    console.log('Failed to update user');
-    return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
-  } catch (error) {
-    console.error('Error in saveVerifiedEmail:', error);
-    return res.redirect(`${process.env.FRONTEND_URL}/VerificationFailed`);
-  }
-};
-
+  };
 
   // start Course email send
   static courseEmail = async(req,res)=>{
