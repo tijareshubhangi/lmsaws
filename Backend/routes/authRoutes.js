@@ -88,7 +88,7 @@ router.get("/user/:userId", async (req, res) => {
 
     // Assuming you have a field in your User model for profileImage
     const latestImageUrl = user.profileImage
-      ? `http://localhost:9000/public/${user.profileImage}`
+      ? `http://65.0.7.20:9000/public/${user.profileImage}`
       : null;
 
     return res.json({

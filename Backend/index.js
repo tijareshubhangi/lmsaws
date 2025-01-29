@@ -20,45 +20,63 @@ import { dirname } from "path";
 // __dirname replacement
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 // Initialize Express App
 const app = express();
 dotenv.config();
 mongoose.set("strictQuery", true);
 
 // Connect to Database
+// Connect to the database
 connectDB();
 
-// app.use(express.static(path.join(__dirname, "../build")));
+// Define allowed origins (you can include both localhost and public IP for production)
+const allowedOrigins = ['http://localhost:9000', 'http://65.0.7.20:3000','http://65.0.7.20.64','http://65.0.7.20:9000'];
+
+// CORS middleware with dynamic origin handling
+app.use(cors({
+  origin: (origin, callback) => {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true); // Allow the request
+    } else {
+      callback(new Error('Not allowed by CORS')); // Reject the request
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow these HTTP methods
+  credentials: true // Allow cookies and credentials
+}));
+
+app.use(express.static(path.join(__dirname, "../build")));
 
 // Middleware
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:3000',
-  'http://127.0.0.1:3000'
-];
+// const allowedOrigins = [
+//   process.env.FRONTEND_URL,
+//   'http://65.0.7.20:3000',
+//   'http://127.0.0.1:3000'
+// ];
 
-app.use(cors())
-// app.use(cors({
-//   origin: (origin, callback) => {
-//     console.log('Request origin:', origin);
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       console.log('Origin not allowed:', origin);
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-//   credentials: true,
-// }));
+// app.use(cors())
+ app.use(cors({
+   origin: (origin, callback) => {
+     console.log('Request origin:', origin);
+     if (!origin || allowedOrigins.includes(origin)) {
+       callback(null, true);
+     } else {
+       console.log('Origin not allowed:', origin);
+       callback(new Error('Not allowed by CORS'));
+     }
+   },
+   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+   allowedHeaders: ['Content-Type', 'Authorization'],
+   credentials: true,
+ }));
 
 app.use(express.json());
 
 // Handle React routing
-// app.get("*", (req, res) => {
-//   res.sendFile(path.join(__dirname, "../build", "index.html"));
-// });
+ app.get("*", (req, res) => {
+   res.sendFile(path.join(__dirname, "../build", "index.html"));
+ });
 
 // Parse JSON data
 app.use(bodyParser.json());
@@ -219,5 +237,5 @@ app.post('/api/users/save', async (req, res) => {
 // Start Server
 const PORT = process.env.PORT || 9000;
 app.listen(PORT, () => {
-  console.log(`API is running on http://localhost:${PORT}`);
+  console.log(`API is running on http://65.0.7.20:${PORT}`);
 });

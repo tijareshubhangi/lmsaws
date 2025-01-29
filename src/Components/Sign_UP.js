@@ -35,7 +35,7 @@ const Sign_UP = () => {
         login({ name: user.displayName, email: user.email, photo: user.photoURL }, token);
   
         // Send the user data and token to your backend (if needed)
-        const response = await axios.post("http://localhost:9000/api/users/save", {
+        const response = await axios.post("http://65.0.7.20:9000/api/users/save", {
           name: user.displayName,
           email: user.email,
           photo: user.photoURL,
@@ -65,7 +65,7 @@ const Sign_UP = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post("http://localhost:9000/api/auth/users/register", input);
+      const response = await axios.post("http://65.0.7.20:9000/api/auth/users/register", input);
       if (response.status === 201) {
         alert(response.data.message);  // Show success message
         navigate("/login");  // Navigate to login page
