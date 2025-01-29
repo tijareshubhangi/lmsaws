@@ -92,8 +92,8 @@ const handleSaveName = async () => {
             setProfileImage(latestImage);  // Set the image URL to profileImage
             setPreview(latestImage);       // Set the preview to the latest image URL
           } else {
-            setProfileImage("http://65.0.7.20:9000/assets/images/avatar/07.jpg"); // Fallback to default if no image
-            setPreview("http://65.0.7.20:9000/assets/images/avatar/07.jpg");
+            setProfileImage("http://13.232.0.0:9000/assets/images/avatar/07.jpg"); // Fallback to default if no image
+            setPreview("http://13.232.0.0:9000/assets/images/avatar/07.jpg");
           }
         }
       } catch (error) {
@@ -136,7 +136,7 @@ const handleSaveName = async () => {
       });
 
       if (res.status === 200) {
-        const latestImageUrl = `http://65.0.7.20:9000/public/${res.data.imageFile}`;
+        const latestImageUrl = `http://13.232.0.0:9000/public/${res.data.imageFile}`;
         // Store the image URL in localStorage
         localStorage.setItem("profileImage", latestImageUrl);
         setProfileImage(latestImageUrl);  // Persist image in profileImage state

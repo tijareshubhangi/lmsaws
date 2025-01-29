@@ -68,7 +68,7 @@ const AdminTopNavBar = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await axios.get("http://65.0.7.20:9000/notifications");
+        const response = await axios.get("http://13.232.0.0:9000/notifications");
         setNotifications(response.data.notifications);
         console.log(response); // Maybe remove this console log in production code
       } catch (error) {

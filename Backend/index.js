@@ -31,7 +31,8 @@ mongoose.set("strictQuery", true);
 connectDB();
 
 // Define allowed origins (you can include both localhost and public IP for production)
-const allowedOrigins = ['http://localhost:9000', 'http://65.0.7.20:3000','http://65.0.7.20.64','http://65.0.7.20:9000'];
+// const allowedOrigins = ['http://localhost:9000', 'http://13.232.0.0:3000','http://13.232.0.0.64','http://13.232.0.0:9000'];
+    
 
 // CORS middleware with dynamic origin handling
 app.use(cors({
@@ -49,27 +50,46 @@ app.use(cors({
 app.use(express.static(path.join(__dirname, "../build")));
 
 // Middleware
-// const allowedOrigins = [
-//   process.env.FRONTEND_URL,
-//   'http://65.0.7.20:3000',
-//   'http://127.0.0.1:3000'
-// ];
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://13.232.0.0:3000',  // Add your AWS IP
+  'http://13.232.0.0:9000'   // Add your AWS IP with backend port
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      console.log('Origin not allowed:', origin);
+      return callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'), false);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400
+}));
 
 // app.use(cors())
- app.use(cors({
-   origin: (origin, callback) => {
-     console.log('Request origin:', origin);
-     if (!origin || allowedOrigins.includes(origin)) {
-       callback(null, true);
-     } else {
-       console.log('Origin not allowed:', origin);
-       callback(new Error('Not allowed by CORS'));
-     }
-   },
-   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-   allowedHeaders: ['Content-Type', 'Authorization'],
-   credentials: true,
- }));
+//  app.use(cors({
+//    origin: (origin, callback) => {
+//      console.log('Request origin:', origin);
+//      if (!origin || allowedOrigins.includes(origin)) {
+//        callback(null, true);
+//      } else {
+//        console.log('Origin not allowed:', origin);
+//        callback(new Error('Not allowed by CORS'));
+//      }
+//    },
+//    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//    allowedHeaders: ['Content-Type', 'Authorization'],
+//    credentials: true,
+//  }));
 
 app.use(express.json());
 
@@ -237,5 +257,5 @@ app.post('/api/users/save', async (req, res) => {
 // Start Server
 const PORT = process.env.PORT || 9000;
 app.listen(PORT, () => {
-  console.log(`API is running on http://65.0.7.20:${PORT}`);
+  console.log(`API is running on http://13.232.0.0:${PORT}`);
 });

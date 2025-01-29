@@ -93,8 +93,8 @@ const AdminEdit = () => {
             setAdminImage(latestImage);
             setPreview(latestImage);
           } else {
-            setAdminImage("http://65.0.7.20:9000/assets/images/avatar/07.jpg"); 
-            setPreview("http://65.0.7.20:9000/assets/images/avatar/07.jpg");
+            setAdminImage("http://13.232.0.0:9000/assets/images/avatar/07.jpg"); 
+            setPreview("http://13.232.0.0:9000/assets/images/avatar/07.jpg");
 
 
           }
@@ -141,7 +141,7 @@ console.log("Stored Image URL in LocalStorage: ", storedImage);    if (storedIma
   
       console.log("Response from server: ", res); // Log the full response
       if (res.status === 200) {
-        const latestImageUrl = `http://65.0.7.20:9000/public/${res.data.imageFile}`;
+        const latestImageUrl = `http://13.232.0.0:9000/public/${res.data.imageFile}`;
         console.log("Constructed Image URL: ", latestImageUrl); // Check constructed URL
   
         // Store image URL in localStorage
