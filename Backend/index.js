@@ -31,7 +31,7 @@ mongoose.set("strictQuery", true);
 connectDB();
 
 // Define allowed origins (you can include both localhost and public IP for production)
-// const allowedOrigins = ['http://localhost:9000', 'http://13.232.0.0:3000','http://13.232.0.0.64','http://13.232.0.0:9000'];
+// const allowedOrigins = ['http://localhost:9000', 'http://15.207.19.75:3000','http://15.207.19.75.64','http://15.207.19.75:9000'];
     
 
 // CORS middleware with dynamic origin handling
@@ -54,8 +54,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'http://13.232.0.0:3000',  // Add your AWS IP
-  'http://13.232.0.0:9000'   // Add your AWS IP with backend port
+  'http://15.207.19.75:3000',  // Add your AWS IP
+  'http://15.207.19.75:9000'   // Add your AWS IP with backend port
 ];
 
 app.use(cors({
@@ -122,6 +122,25 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", courseRoutes);
 app.use("/uploads", express.static("uploads"));
+
+
+app.use((err, req, res, next) => {
+  if (err.message === 'The CORS policy for this site does not allow access from the specified Origin.') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'CORS Error: Origin not allowed'
+    });
+  }
+  
+  // Handle other errors
+  console.error(err.stack);
+  res.status(500).json({
+    status: 'error',
+    message: 'Internal server error'
+  });
+});
+
+
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -257,5 +276,6 @@ app.post('/api/users/save', async (req, res) => {
 // Start Server
 const PORT = process.env.PORT || 9000;
 app.listen(PORT, () => {
-  console.log(`API is running on http://13.232.0.0:${PORT}`);
+  console.log(`API is running on http://15.207.19.75:${PORT}`);
+  console.log('Allowed Origins:', allowedOrigins);
 });

@@ -125,7 +125,7 @@ class authController {
             expiresIn: "5m",
           });
   
-          const link = `http://13.232.0.0:3000/user/reset/${isUser._id}/${token}`;
+          const link = `http://15.207.19.75:3000/user/reset/${isUser._id}/${token}`;
   
           // email sending
           const transport = nodemailer.createTransport({
@@ -299,7 +299,7 @@ static saveVerifiedEmail = async (req, res) => {
             expiresIn: "5m",
           });
   
-          const link = `http://13.232.0.0:9000/user/sendEmail/${isUser._id}/${token}`;
+          const link = `http://15.207.19.75:9000/user/sendEmail/${isUser._id}/${token}`;
           
   
           // email sending
@@ -385,7 +385,7 @@ static saveVerifiedEmail = async (req, res) => {
             expiresIn: "5m",
           });
   
-          const link = `http://13.232.0.0:3000/user/reset/${isUser._id}/${token}`;
+          const link = `http://15.207.19.75:3000/user/reset/${isUser._id}/${token}`;
   
           // email sending
           const transport = nodemailer.createTransport({
